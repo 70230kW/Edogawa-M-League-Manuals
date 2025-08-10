@@ -10,11 +10,15 @@ import {
     deleteDoc, 
     onSnapshot, 
     query, 
-    serverTimestamp
+    serverTimestamp,
+    writeBatch,
+    getDocs,
+    where,
+    increment,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- グローバル変数と定数 ---
-// ユーザー提供のFirebase設定
 const firebaseConfig = {
   apiKey: "AIzaSyCleKavI0XicnYv2Hl1tkRNRikCBrb8is4",
   authDomain: "edogawa-m-league-results.firebaseapp.com",
@@ -24,12 +28,14 @@ const firebaseConfig = {
   appId: "1:315224725184:web:e0f8dbca47f04b2fa37f25",
   measurementId: "G-B3ZTXE1MYV"
 };
-const appId = firebaseConfig.appId; // 設定からappIdを取得
 
 let db, auth, userId;
-let manualsUnsubscribe = null; // リアルタイムリスナーの解除用
-let currentManuals = []; // マニュアルデータを保持する配列
-let selectedCategory = 'all'; // 現在選択されているカテゴリ
+let manualsUnsubscribe = null;
+let categoriesUnsubscribe = null;
+let currentManuals = [];
+let currentCategories = [];
+let selectedCategory = 'all';
+let isSelectMode = false;
 
 const markdownConverter = new showdown.Converter();
 
@@ -37,19 +43,23 @@ const markdownConverter = new showdown.Converter();
 const categoryList = document.getElementById('category-list');
 const manualList = document.getElementById('manual-list');
 const manualListTitle = document.getElementById('manual-list-title');
-const manualDetailView = document.getElementById('manual-detail-view');
 const initialMessage = document.getElementById('initial-message');
 const manualContentWrapper = document.getElementById('manual-content-wrapper');
 const manualTitle = document.getElementById('manual-title');
+const manualLastUpdated = document.getElementById('manual-last-updated');
 const manualContent = document.getElementById('manual-content');
-
 const manualModal = document.getElementById('manual-modal');
 const modalTitle = document.getElementById('modal-title');
 const manualForm = document.getElementById('manual-form');
 const manualIdInput = document.getElementById('manual-id');
 const titleInput = document.getElementById('title-input');
-const categoryInput = document.getElementById('category-input');
+const categorySelect = document.getElementById('category-select');
+const newCategoryWrapper = document.getElementById('new-category-wrapper');
+const newCategoryInput = document.getElementById('new-category-input');
 const contentInput = document.getElementById('content-input');
+const addManualBtn = document.getElementById('add-manual-btn');
+const toggleSelectModeBtn = document.getElementById('toggle-select-mode-btn');
+const deleteSelectedBtn = document.getElementById('delete-selected-btn');
 
 
 // --- Firebaseの初期化と認証 ---
@@ -61,13 +71,10 @@ async function initializeFirebase() {
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                console.log("Authenticated user:", user.uid);
                 userId = user.uid;
-                // 認証が完了したらデータの監視を開始
-                setupManualsListener();
+                await setupInitialCategories();
+                setupListeners();
             } else {
-                console.log("No user signed in. Attempting to sign in anonymously.");
-                // 匿名認証でサインイン
                 await signInAnonymously(auth);
             }
         });
@@ -77,38 +84,71 @@ async function initializeFirebase() {
     }
 }
 
-// --- データ監視 ---
-function setupManualsListener() {
-    if (manualsUnsubscribe) manualsUnsubscribe(); // 既存のリスナーを解除
+// --- データ監視リスナー ---
+function setupListeners() {
     if (!userId) return;
+    
+    // カテゴリの監視
+    const categoriesColRef = collection(db, `categories/${userId}/items`);
+    if (categoriesUnsubscribe) categoriesUnsubscribe();
+    categoriesUnsubscribe = onSnapshot(query(categoriesColRef), (snapshot) => {
+        currentCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderCategories();
+        renderCategoryDropdown();
+    });
 
-    // Firestoreのパスを一般的なものに変更（プロジェクト固有のデータ構造を反映）
+    // マニュアルの監視
     const manualsColRef = collection(db, `manuals/${userId}/items`);
-
+    if (manualsUnsubscribe) manualsUnsubscribe();
     manualsUnsubscribe = onSnapshot(query(manualsColRef), (snapshot) => {
         currentManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // 日付でソート (新しいものが上)
-        currentManuals.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-        
-        renderCategories();
         renderManualList();
-    }, (error) => {
-        console.error("Error listening to manuals:", error);
     });
+}
+
+// --- 初期データ設定 ---
+async function setupInitialCategories() {
+    const defaultCategories = ["対局", "順位表", "トロフィー", "データ分析", "個人成績", "対局履歴", "直接対決", "詳細履歴", "雀士管理"];
+    const categoriesColRef = collection(db, `categories/${userId}/items`);
+    const snapshot = await getDocs(categoriesColRef);
+    if (snapshot.empty) {
+        const batch = writeBatch(db);
+        defaultCategories.forEach(name => {
+            const docRef = doc(categoriesColRef);
+            batch.set(docRef, { name });
+        });
+        await batch.commit();
+    }
 }
 
 // --- UI描画関連 ---
 
-// カテゴリリストの描画
+// カテゴリサイドバーの描画
 function renderCategories() {
-    const categories = ['all', ...new Set(currentManuals.map(m => m.category))];
-    categoryList.innerHTML = categories.map(category => `
+    const allCategoriesItem = `
         <li>
-            <a href="#" data-category="${category}" class="category-item block p-2 rounded-lg transition-colors ${selectedCategory === category ? 'bg-cyan-500/30 text-cyan-300' : 'hover:bg-gray-700/50'}">
-                ${category === 'all' ? 'すべてのマニュアル' : category}
+            <a href="#" data-category="all" class="category-item flex items-center justify-between p-2 rounded-lg transition-colors ${selectedCategory === 'all' ? 'bg-cyan-500/30 text-cyan-300' : 'hover:bg-gray-700/50'}">
+                <span>すべてのマニュアル</span>
+            </a>
+        </li>`;
+    
+    categoryList.innerHTML = allCategoriesItem + currentCategories.map(cat => `
+        <li>
+            <a href="#" data-category="${cat.name}" class="category-item flex items-center justify-between p-2 rounded-lg transition-colors ${selectedCategory === cat.name ? 'bg-cyan-500/30 text-cyan-300' : 'hover:bg-gray-700/50'}">
+                <span class="category-name">${cat.name}</span>
+                <svg data-id="${cat.id}" data-name="${cat.name}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil edit-category-icon"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
             </a>
         </li>
     `).join('');
+}
+
+// モーダル内のカテゴリプルダウンを描画
+function renderCategoryDropdown() {
+    categorySelect.innerHTML = `
+        <option value="" disabled selected>カテゴリを選択してください</option>
+        ${currentCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('')}
+        <option value="add_new_category">＋カテゴリを追加</option>
+    `;
 }
 
 // マニュアルリストの描画
@@ -125,9 +165,12 @@ function renderManualList() {
     }
 
     manualList.innerHTML = manualsToShow.map(manual => `
-        <div data-id="${manual.id}" class="manual-item-card p-3 mb-2 rounded-lg border border-transparent hover:border-cyan-500 hover:bg-gray-800/50 cursor-pointer transition-all">
-            <h3 class="font-bold text-cyan-400 truncate">${manual.title}</h3>
-            <p class="text-sm text-gray-400">${manual.category}</p>
+        <div data-id="${manual.id}" class="manual-item-card flex items-center p-3 mb-2 rounded-lg border border-transparent hover:border-cyan-500 hover:bg-gray-800/50 cursor-pointer transition-all">
+            ${isSelectMode ? `<input type="checkbox" data-id="${manual.id}" class="manual-checkbox">` : ''}
+            <div class="flex-1 overflow-hidden">
+                <h3 class="font-bold text-cyan-400 truncate">${manual.title} - v${manual.version || 1}</h3>
+                <p class="text-sm text-gray-400">${manual.category}</p>
+            </div>
         </div>
     `).join('');
 }
@@ -140,27 +183,38 @@ function showManualDetail(manualId) {
     initialMessage.classList.add('hidden');
     manualContentWrapper.classList.remove('hidden');
 
-    manualTitle.textContent = manual.title;
-    // MarkdownをHTMLに変換して表示
+    manualTitle.textContent = `${manual.title} - v${manual.version || 1}`;
+    manualLastUpdated.textContent = manual.updatedAt ? `最終更新日：${formatDate(manual.updatedAt.toDate())}` : '';
     manualContent.innerHTML = markdownConverter.makeHtml(manual.content);
     
-    // 編集・削除ボタンにIDを設定
     document.getElementById('edit-manual-btn').dataset.id = manual.id;
     document.getElementById('delete-manual-btn').dataset.id = manual.id;
 }
 
+// 日付フォーマット関数
+function formatDate(date) {
+    const week = ['日', '月', '火', '水', '木', '金', '土'];
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    const day = week[date.getDay()];
+    return `${y}年${m}月${d}日(${day})`;
+}
+
+
 // --- モーダル関連 ---
 function openModal(manual = null) {
     manualForm.reset();
+    newCategoryWrapper.classList.add('hidden');
+    renderCategoryDropdown();
+
     if (manual) {
-        // 編集モード
         modalTitle.textContent = 'マニュアル編集';
         manualIdInput.value = manual.id;
         titleInput.value = manual.title;
-        categoryInput.value = manual.category;
+        categorySelect.value = manual.category;
         contentInput.value = manual.content;
     } else {
-        // 新規作成モード
         modalTitle.textContent = '新規マニュアル作成';
         manualIdInput.value = '';
     }
@@ -172,35 +226,46 @@ function closeModal() {
 }
 
 // --- CRUD操作 ---
+
+// マニュアルの保存/更新
 async function saveManual() {
-    if (!userId) {
-        alert("ユーザー情報が取得できません。");
-        return;
+    if (!userId) return alert("ユーザー情報が取得できません。");
+
+    let category = categorySelect.value;
+    if (category === 'add_new_category') {
+        const newCategoryName = newCategoryInput.value.trim();
+        if (!newCategoryName) return alert("新しいカテゴリ名を入力してください。");
+        
+        const existingCategory = currentCategories.find(c => c.name === newCategoryName);
+        if (!existingCategory) {
+            const categoriesColRef = collection(db, `categories/${userId}/items`);
+            await addDoc(categoriesColRef, { name: newCategoryName });
+        }
+        category = newCategoryName;
     }
+
+    if (!category) return alert("カテゴリを選択してください。");
 
     const id = manualIdInput.value;
     const data = {
         title: titleInput.value.trim(),
-        category: categoryInput.value.trim(),
+        category: category,
         content: contentInput.value.trim(),
         updatedAt: serverTimestamp(),
     };
 
-    if (!data.title || !data.category || !data.content) {
-        alert("すべてのフィールドを入力してください。");
-        return;
-    }
+    if (!data.title || !data.content) return alert("タイトルと内容を入力してください。");
 
     try {
-        const colRef = collection(db, `manuals/${userId}/items`);
+        const manualsColRef = collection(db, `manuals/${userId}/items`);
         if (id) {
-            // 更新
-            const docRef = doc(colRef, id);
+            const docRef = doc(manualsColRef, id);
+            data.version = increment(1); // バージョンをインクリメント
             await setDoc(docRef, data, { merge: true });
         } else {
-            // 新規作成
             data.createdAt = serverTimestamp();
-            await addDoc(colRef, data);
+            data.version = 1; // 初期バージョン
+            await addDoc(manualsColRef, data);
         }
         closeModal();
     } catch (error) {
@@ -209,40 +274,90 @@ async function saveManual() {
     }
 }
 
+// 単一マニュアルの削除
 async function deleteManual(manualId) {
-    if (!userId) {
-        alert("ユーザー情報が取得できません。");
-        return;
-    }
-    // カスタム確認ダイアログの方が望ましいが、サンプルとしてconfirmを使用
-    if (!confirm("本当にこのマニュアルを削除しますか？この操作は元に戻せません。")) {
-        return;
-    }
+    if (!userId) return alert("ユーザー情報が取得できません。");
+    if (!confirm("本当にこのマニュアルを削除しますか？")) return;
 
     try {
-        const docRef = doc(db, `manuals/${userId}/items`, manualId);
-        await deleteDoc(docRef);
-        
-        // 詳細表示をリセット
+        await deleteDoc(doc(db, `manuals/${userId}/items`, manualId));
         initialMessage.classList.remove('hidden');
         manualContentWrapper.classList.add('hidden');
-
     } catch (error) {
         console.error("Error deleting manual:", error);
         alert("削除に失敗しました。");
     }
 }
 
+// 複数マニュアルの削除
+async function deleteSelectedManuals() {
+    const selectedIds = Array.from(document.querySelectorAll('.manual-checkbox:checked')).map(cb => cb.dataset.id);
+    if (selectedIds.length === 0) return alert("削除するマニュアルを選択してください。");
+    if (!confirm(`${selectedIds.length}件のマニュアルを本当に削除しますか？`)) return;
+
+    try {
+        const batch = writeBatch(db);
+        selectedIds.forEach(id => {
+            const docRef = doc(db, `manuals/${userId}/items`, id);
+            batch.delete(docRef);
+        });
+        await batch.commit();
+        toggleSelectMode(); // 選択モードを解除
+    } catch (error) {
+        console.error("Error deleting selected manuals:", error);
+        alert("複数削除に失敗しました。");
+    }
+}
+
+// カテゴリ名の編集
+async function editCategoryName(categoryId, oldName) {
+    const newName = prompt("新しいカテゴリ名を入力してください:", oldName);
+    if (!newName || newName.trim() === '' || newName === oldName) return;
+
+    try {
+        const batch = writeBatch(db);
+        // 1. カテゴリ名を更新
+        const categoryDocRef = doc(db, `categories/${userId}/items`, categoryId);
+        batch.update(categoryDocRef, { name: newName });
+
+        // 2. 関連するマニュアルのカテゴリ名をすべて更新
+        const manualsColRef = collection(db, `manuals/${userId}/items`);
+        const q = query(manualsColRef, where("category", "==", oldName));
+        const snapshot = await getDocs(q);
+        snapshot.forEach(manualDoc => {
+            batch.update(manualDoc.ref, { category: newName });
+        });
+
+        await batch.commit();
+        alert("カテゴリ名を更新しました。");
+    } catch (error) {
+        console.error("Error updating category name:", error);
+        alert("カテゴリ名の更新に失敗しました。");
+    }
+}
+
+// --- モード切替 ---
+function toggleSelectMode() {
+    isSelectMode = !isSelectMode;
+    addManualBtn.classList.toggle('hidden', isSelectMode);
+    deleteSelectedBtn.classList.toggle('hidden', !isSelectMode);
+    toggleSelectModeBtn.textContent = isSelectMode ? 'キャンセル' : '選択';
+    renderManualList(); // チェックボックスの表示/非表示を切り替える
+}
 
 // --- イベントリスナーの設定 ---
 function setupEventListeners() {
     // カテゴリ選択
     categoryList.addEventListener('click', (e) => {
         e.preventDefault();
-        const target = e.target.closest('.category-item');
-        if (target) {
-            selectedCategory = target.dataset.category;
-            renderCategories(); // 選択状態を更新
+        const categoryLink = e.target.closest('.category-item');
+        const editIcon = e.target.closest('.edit-category-icon');
+
+        if (editIcon) {
+            editCategoryName(editIcon.dataset.id, editIcon.dataset.name);
+        } else if (categoryLink) {
+            selectedCategory = categoryLink.dataset.category;
+            renderCategories();
             renderManualList();
         }
     });
@@ -250,13 +365,13 @@ function setupEventListeners() {
     // マニュアル選択
     manualList.addEventListener('click', (e) => {
         const card = e.target.closest('.manual-item-card');
-        if (card) {
+        if (card && !isSelectMode) {
             showManualDetail(card.dataset.id);
         }
     });
 
     // 新規マニュアルボタン
-    document.getElementById('add-manual-btn').addEventListener('click', () => openModal());
+    addManualBtn.addEventListener('click', () => openModal());
 
     // モーダル閉じるボタン
     document.getElementById('close-modal-btn').addEventListener('click', closeModal);
@@ -276,6 +391,22 @@ function setupEventListeners() {
         const id = e.currentTarget.dataset.id;
         if(id) deleteManual(id);
     });
+    
+    // カテゴリプルダウンの変更
+    categorySelect.addEventListener('change', () => {
+        if (categorySelect.value === 'add_new_category') {
+            newCategoryWrapper.classList.remove('hidden');
+            newCategoryInput.focus();
+        } else {
+            newCategoryWrapper.classList.add('hidden');
+        }
+    });
+    
+    // 複数選択モード切替
+    toggleSelectModeBtn.addEventListener('click', toggleSelectMode);
+    
+    // 複数選択削除ボタン
+    deleteSelectedBtn.addEventListener('click', deleteSelectedManuals);
 }
 
 // --- アプリケーションの開始 ---
