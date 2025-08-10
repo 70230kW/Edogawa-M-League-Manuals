@@ -1,6 +1,6 @@
 /* カスタムスタイル */
 body {
-    font-family: 'Roboto Mono', monospace;
+    font-family: "MS Pゴシック", "MS PGothic", sans-serif;
     background-color: #0a0a0a;
     color: #e0e0e0;
     overflow-x: hidden;
@@ -94,4 +94,21 @@ body {
     padding-left: 1em;
     color: #a0a0a0;
     margin-left: 0;
+}
+
+/* 複数選択モードのチェックボックス */
+.manual-checkbox {
+    transform: scale(1.2);
+    margin-right: 12px;
+    accent-color: #00aaff;
+}
+
+/* カテゴリ編集アイコン */
+.edit-category-icon {
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.edit-category-icon:hover {
+    opacity: 1;
 }
