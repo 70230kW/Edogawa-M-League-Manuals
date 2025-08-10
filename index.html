@@ -3,15 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Manual Hub</title>
+    <title>江戸川Mリーグ マニュアル</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts (Roboto Mono) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide-react@latest/dist/lucide-react.js"></script>
@@ -29,12 +24,22 @@
         <header class="bg-black/50 backdrop-blur-sm border-b border-cyan-500/30 p-4 flex justify-between items-center z-20">
             <h1 class="text-2xl font-bold neon-text flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-marked"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><polyline points="10 2 10 10 13 7 16 10 16 2"/></svg>
-                Cyber Manual Hub
+                江戸川Mリーグ マニュアル
             </h1>
-            <button id="add-manual-btn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2 neon-shadow-green">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
-                新規マニュアル
-            </button>
+            <div class="flex items-center gap-4">
+                <button id="toggle-select-mode-btn" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-checks"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+                    選択
+                </button>
+                 <button id="delete-selected-btn" class="hidden bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                    選択項目を削除
+                </button>
+                <button id="add-manual-btn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2 neon-shadow-green">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+                    新規マニュアル
+                </button>
+            </div>
         </header>
 
         <!-- メインコンテンツ -->
@@ -65,8 +70,11 @@
                     </div>
                     <!-- マニュアル詳細コンテンツ -->
                     <div id="manual-content-wrapper" class="hidden">
-                        <div class="flex justify-between items-center mb-4">
-                            <h1 id="manual-title" class="text-3xl font-bold text-cyan-300"></h1>
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h1 id="manual-title" class="text-3xl font-bold text-cyan-300"></h1>
+                                <p id="manual-last-updated" class="text-sm text-gray-400 mt-1"></p>
+                            </div>
                             <div class="flex gap-2">
                                 <button id="edit-manual-btn" class="p-2 bg-yellow-500/80 hover:bg-yellow-400 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
                                 <button id="delete-manual-btn" class="p-2 bg-red-500/80 hover:bg-red-400 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
@@ -93,8 +101,14 @@
                     <input type="text" id="title-input" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">
                 </div>
                 <div>
-                    <label for="category-input" class="block text-sm font-medium text-cyan-300 mb-1">カテゴリ</label>
-                    <input type="text" id="category-input" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition" placeholder="例: 初期設定, トラブルシューティング">
+                    <label for="category-select" class="block text-sm font-medium text-cyan-300 mb-1">カテゴリ</label>
+                    <select id="category-select" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">
+                        <!-- カテゴリが動的に挿入されます -->
+                    </select>
+                </div>
+                 <div id="new-category-wrapper" class="hidden">
+                    <label for="new-category-input" class="block text-sm font-medium text-cyan-300 mb-1">新しいカテゴリ名</label>
+                    <input type="text" id="new-category-input" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition" placeholder="新しいカテゴリ名を入力">
                 </div>
                 <div>
                     <label for="content-input" class="block text-sm font-medium text-cyan-300 mb-1">内容 (Markdown対応)</label>
