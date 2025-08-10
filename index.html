@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>江戸川Mリーグ マニュアル</title>
+    <title>Cyber Manual Hub</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Roboto Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide-react@latest/dist/lucide-react.js"></script>
@@ -14,8 +19,89 @@
     <!-- Showdown.js (Markdown to HTML) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* カスタムスタイル */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+        /* サイバーな背景 */
+        .cyber-bg {
+            background-color: #0d1117;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        /* ネオン風の影 */
+        .neon-shadow {
+            box-shadow: 0 0 5px #00aaff, 0 0 10px #00aaff, 0 0 15px #00aaff;
+        }
+        .neon-shadow-green {
+            box-shadow: 0 0 5px #00ffaa, 0 0 10px #00ffaa;
+        }
+        .neon-text {
+            text-shadow: 0 0 5px #00aaff, 0 0 10px #00aaff;
+        }
+        /* スクロールバーのスタイル */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00aaff;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0077cc;
+        }
+        /* Markdown表示エリアのスタイル */
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            border-bottom: 1px solid #00aaff;
+            padding-bottom: 0.3em;
+            margin-top: 1.5em;
+            margin-bottom: 1em;
+            color: #00d9ff;
+        }
+        .markdown-content p {
+            line-height: 1.8;
+            margin-bottom: 1em;
+        }
+        .markdown-content a {
+            color: #00ffaa;
+            text-decoration: underline;
+        }
+        .markdown-content code {
+            background-color: #161b22;
+            padding: 0.2em 0.4em;
+            border-radius: 6px;
+            font-size: 85%;
+            color: #ff79c6;
+        }
+        .markdown-content pre {
+            background-color: #161b22;
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .markdown-content ul, .markdown-content ol {
+            padding-left: 2em;
+            margin-bottom: 1em;
+        }
+        .markdown-content li {
+            margin-bottom: 0.5em;
+        }
+        .markdown-content blockquote {
+            border-left: 4px solid #00aaff;
+            padding-left: 1em;
+            color: #a0a0a0;
+            margin-left: 0;
+        }
+    </style>
 </head>
 <body class="cyber-bg min-h-screen">
 
@@ -24,22 +110,12 @@
         <header class="bg-black/50 backdrop-blur-sm border-b border-cyan-500/30 p-4 flex justify-between items-center z-20">
             <h1 class="text-2xl font-bold neon-text flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-marked"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><polyline points="10 2 10 10 13 7 16 10 16 2"/></svg>
-                江戸川Mリーグ マニュアル
+                Cyber Manual Hub
             </h1>
-            <div class="flex items-center gap-4">
-                <button id="toggle-select-mode-btn" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-checks"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
-                    選択
-                </button>
-                 <button id="delete-selected-btn" class="hidden bg-red-500 hover:bg-red-400 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                    選択項目を削除
-                </button>
-                <button id="add-manual-btn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2 neon-shadow-green">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
-                    新規マニュアル
-                </button>
-            </div>
+            <button id="add-manual-btn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-2 px-4 rounded-lg transition-all duration-300 flex items-center gap-2 neon-shadow-green">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+                新規マニュアル
+            </button>
         </header>
 
         <!-- メインコンテンツ -->
@@ -70,11 +146,8 @@
                     </div>
                     <!-- マニュアル詳細コンテンツ -->
                     <div id="manual-content-wrapper" class="hidden">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h1 id="manual-title" class="text-3xl font-bold text-cyan-300"></h1>
-                                <p id="manual-last-updated" class="text-sm text-gray-400 mt-1"></p>
-                            </div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h1 id="manual-title" class="text-3xl font-bold text-cyan-300"></h1>
                             <div class="flex gap-2">
                                 <button id="edit-manual-btn" class="p-2 bg-yellow-500/80 hover:bg-yellow-400 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
                                 <button id="delete-manual-btn" class="p-2 bg-red-500/80 hover:bg-red-400 rounded-lg transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
@@ -101,14 +174,8 @@
                     <input type="text" id="title-input" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">
                 </div>
                 <div>
-                    <label for="category-select" class="block text-sm font-medium text-cyan-300 mb-1">カテゴリ</label>
-                    <select id="category-select" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">
-                        <!-- カテゴリが動的に挿入されます -->
-                    </select>
-                </div>
-                 <div id="new-category-wrapper" class="hidden">
-                    <label for="new-category-input" class="block text-sm font-medium text-cyan-300 mb-1">新しいカテゴリ名</label>
-                    <input type="text" id="new-category-input" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition" placeholder="新しいカテゴリ名を入力">
+                    <label for="category-input" class="block text-sm font-medium text-cyan-300 mb-1">カテゴリ</label>
+                    <input type="text" id="category-input" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition" placeholder="例: 初期設定, トラブルシューティング">
                 </div>
                 <div>
                     <label for="content-input" class="block text-sm font-medium text-cyan-300 mb-1">内容 (Markdown対応)</label>
@@ -123,7 +190,292 @@
         </div>
     </div>
 
-    <!-- Firebase SDK & Custom Script -->
-    <script type="module" src="script.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase SDK のモジュールをインポート
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            addDoc, 
+            setDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            query, 
+            serverTimestamp,
+            where
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- グローバル変数と定数 ---
+        // Canvas環境から提供されるFirebase設定と認証情報を取得
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let db, auth, userId;
+        let manualsUnsubscribe = null; // リアルタイムリスナーの解除用
+        let currentManuals = []; // マニュアルデータを保持する配列
+        let selectedCategory = 'all'; // 現在選択されているカテゴリ
+        
+        const markdownConverter = new showdown.Converter();
+
+        // --- DOM要素の取得 ---
+        const categoryList = document.getElementById('category-list');
+        const manualList = document.getElementById('manual-list');
+        const manualListTitle = document.getElementById('manual-list-title');
+        const manualDetailView = document.getElementById('manual-detail-view');
+        const initialMessage = document.getElementById('initial-message');
+        const manualContentWrapper = document.getElementById('manual-content-wrapper');
+        const manualTitle = document.getElementById('manual-title');
+        const manualContent = document.getElementById('manual-content');
+        
+        const manualModal = document.getElementById('manual-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const manualForm = document.getElementById('manual-form');
+        const manualIdInput = document.getElementById('manual-id');
+        const titleInput = document.getElementById('title-input');
+        const categoryInput = document.getElementById('category-input');
+        const contentInput = document.getElementById('content-input');
+
+
+        // --- Firebaseの初期化と認証 ---
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        console.log("Authenticated user:", user.uid);
+                        userId = user.uid;
+                        // 認証が完了したらデータの監視を開始
+                        setupManualsListener();
+                    } else {
+                        console.log("No user signed in. Attempting to sign in.");
+                        // 認証トークンがあればそれでサインイン、なければ匿名認証
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                alert("アプリケーションの初期化に失敗しました。");
+            }
+        }
+        
+        // --- データ監視 ---
+        function setupManualsListener() {
+            if (manualsUnsubscribe) manualsUnsubscribe(); // 既存のリスナーを解除
+            if (!userId) return;
+
+            const manualsColRef = collection(db, `artifacts/${appId}/users/${userId}/manuals`);
+            const q = query(manualsColRef);
+
+            manualsUnsubscribe = onSnapshot(q, (snapshot) => {
+                currentManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // 日付でソート (新しいものが上)
+                currentManuals.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                
+                renderCategories();
+                renderManualList();
+            }, (error) => {
+                console.error("Error listening to manuals:", error);
+            });
+        }
+        
+        // --- UI描画関連 ---
+
+        // カテゴリリストの描画
+        function renderCategories() {
+            const categories = ['all', ...new Set(currentManuals.map(m => m.category))];
+            categoryList.innerHTML = categories.map(category => `
+                <li>
+                    <a href="#" data-category="${category}" class="category-item block p-2 rounded-lg transition-colors ${selectedCategory === category ? 'bg-cyan-500/30 text-cyan-300' : 'hover:bg-gray-700/50'}">
+                        ${category === 'all' ? 'すべてのマニュアル' : category}
+                    </a>
+                </li>
+            `).join('');
+        }
+
+        // マニュアルリストの描画
+        function renderManualList() {
+            const manualsToShow = selectedCategory === 'all' 
+                ? currentManuals 
+                : currentManuals.filter(m => m.category === selectedCategory);
+            
+            manualListTitle.textContent = selectedCategory === 'all' ? 'すべてのマニュアル' : `カテゴリ: ${selectedCategory}`;
+
+            if (manualsToShow.length === 0) {
+                manualList.innerHTML = `<p class="text-gray-500">このカテゴリにはマニュアルがありません。</p>`;
+                return;
+            }
+
+            manualList.innerHTML = manualsToShow.map(manual => `
+                <div data-id="${manual.id}" class="manual-item-card p-3 mb-2 rounded-lg border border-transparent hover:border-cyan-500 hover:bg-gray-800/50 cursor-pointer transition-all">
+                    <h3 class="font-bold text-cyan-400 truncate">${manual.title}</h3>
+                    <p class="text-sm text-gray-400">${manual.category}</p>
+                </div>
+            `).join('');
+        }
+
+        // マニュアル詳細の表示
+        function showManualDetail(manualId) {
+            const manual = currentManuals.find(m => m.id === manualId);
+            if (!manual) return;
+
+            initialMessage.classList.add('hidden');
+            manualContentWrapper.classList.remove('hidden');
+
+            manualTitle.textContent = manual.title;
+            // MarkdownをHTMLに変換して表示
+            manualContent.innerHTML = markdownConverter.makeHtml(manual.content);
+            
+            // 編集・削除ボタンにIDを設定
+            document.getElementById('edit-manual-btn').dataset.id = manual.id;
+            document.getElementById('delete-manual-btn').dataset.id = manual.id;
+        }
+
+        // --- モーダル関連 ---
+        function openModal(manual = null) {
+            manualForm.reset();
+            if (manual) {
+                // 編集モード
+                modalTitle.textContent = 'マニュアル編集';
+                manualIdInput.value = manual.id;
+                titleInput.value = manual.title;
+                categoryInput.value = manual.category;
+                contentInput.value = manual.content;
+            } else {
+                // 新規作成モード
+                modalTitle.textContent = '新規マニュアル作成';
+                manualIdInput.value = '';
+            }
+            manualModal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            manualModal.classList.add('hidden');
+        }
+
+        // --- CRUD操作 ---
+        async function saveManual() {
+            if (!userId) {
+                alert("ユーザー情報が取得できません。");
+                return;
+            }
+
+            const id = manualIdInput.value;
+            const data = {
+                title: titleInput.value.trim(),
+                category: categoryInput.value.trim(),
+                content: contentInput.value.trim(),
+                updatedAt: serverTimestamp(),
+            };
+
+            if (!data.title || !data.category || !data.content) {
+                alert("すべてのフィールドを入力してください。");
+                return;
+            }
+
+            try {
+                const colRef = collection(db, `artifacts/${appId}/users/${userId}/manuals`);
+                if (id) {
+                    // 更新
+                    const docRef = doc(colRef, id);
+                    await setDoc(docRef, data, { merge: true });
+                } else {
+                    // 新規作成
+                    data.createdAt = serverTimestamp();
+                    await addDoc(colRef, data);
+                }
+                closeModal();
+            } catch (error) {
+                console.error("Error saving manual:", error);
+                alert("保存に失敗しました。");
+            }
+        }
+        
+        async function deleteManual(manualId) {
+            if (!userId) {
+                alert("ユーザー情報が取得できません。");
+                return;
+            }
+            // カスタム確認ダイアログの方が望ましいが、サンプルとしてconfirmを使用
+            if (!confirm("本当にこのマニュアルを削除しますか？この操作は元に戻せません。")) {
+                return;
+            }
+
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/manuals`, manualId);
+                await deleteDoc(docRef);
+                
+                // 詳細表示をリセット
+                initialMessage.classList.remove('hidden');
+                manualContentWrapper.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Error deleting manual:", error);
+                alert("削除に失敗しました。");
+            }
+        }
+
+
+        // --- イベントリスナーの設定 ---
+        function setupEventListeners() {
+            // カテゴリ選択
+            categoryList.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = e.target.closest('.category-item');
+                if (target) {
+                    selectedCategory = target.dataset.category;
+                    renderCategories(); // 選択状態を更新
+                    renderManualList();
+                }
+            });
+            
+            // マニュアル選択
+            manualList.addEventListener('click', (e) => {
+                const card = e.target.closest('.manual-item-card');
+                if (card) {
+                    showManualDetail(card.dataset.id);
+                }
+            });
+
+            // 新規マニュアルボタン
+            document.getElementById('add-manual-btn').addEventListener('click', () => openModal());
+
+            // モーダル閉じるボタン
+            document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+
+            // 保存ボタン
+            document.getElementById('save-manual-btn').addEventListener('click', saveManual);
+            
+            // 編集ボタン
+            document.getElementById('edit-manual-btn').addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                const manual = currentManuals.find(m => m.id === id);
+                if(manual) openModal(manual);
+            });
+
+            // 削除ボタン
+            document.getElementById('delete-manual-btn').addEventListener('click', (e) => {
+                const id = e.currentTarget.dataset.id;
+                if(id) deleteManual(id);
+            });
+        }
+
+        // --- アプリケーションの開始 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            setupEventListeners();
+        });
+
+    </script>
 </body>
 </html>
