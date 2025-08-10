@@ -1,6 +1,6 @@
 // Firebase SDK のモジュールをインポート
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, 
     collection, 
@@ -10,15 +10,21 @@ import {
     deleteDoc, 
     onSnapshot, 
     query, 
-    serverTimestamp,
-    where
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- グローバル変数と定数 ---
-// Canvas環境から提供されるFirebase設定と認証情報を取得
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// ユーザー提供のFirebase設定
+const firebaseConfig = {
+  apiKey: "AIzaSyCleKavI0XicnYv2Hl1tkRNRikCBrb8is4",
+  authDomain: "edogawa-m-league-results.firebaseapp.com",
+  projectId: "edogawa-m-league-results",
+  storageBucket: "edogawa-m-league-results.firebasestorage.app",
+  messagingSenderId: "315224725184",
+  appId: "1:315224725184:web:e0f8dbca47f04b2fa37f25",
+  measurementId: "G-B3ZTXE1MYV"
+};
+const appId = firebaseConfig.appId; // 設定からappIdを取得
 
 let db, auth, userId;
 let manualsUnsubscribe = null; // リアルタイムリスナーの解除用
@@ -60,13 +66,9 @@ async function initializeFirebase() {
                 // 認証が完了したらデータの監視を開始
                 setupManualsListener();
             } else {
-                console.log("No user signed in. Attempting to sign in.");
-                // 認証トークンがあればそれでサインイン、なければ匿名認証
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                console.log("No user signed in. Attempting to sign in anonymously.");
+                // 匿名認証でサインイン
+                await signInAnonymously(auth);
             }
         });
     } catch (error) {
@@ -80,10 +82,10 @@ function setupManualsListener() {
     if (manualsUnsubscribe) manualsUnsubscribe(); // 既存のリスナーを解除
     if (!userId) return;
 
-    const manualsColRef = collection(db, `artifacts/${appId}/users/${userId}/manuals`);
-    const q = query(manualsColRef);
+    // Firestoreのパスを一般的なものに変更（プロジェクト固有のデータ構造を反映）
+    const manualsColRef = collection(db, `manuals/${userId}/items`);
 
-    manualsUnsubscribe = onSnapshot(q, (snapshot) => {
+    manualsUnsubscribe = onSnapshot(query(manualsColRef), (snapshot) => {
         currentManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         // 日付でソート (新しいものが上)
         currentManuals.sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
@@ -190,7 +192,7 @@ async function saveManual() {
     }
 
     try {
-        const colRef = collection(db, `artifacts/${appId}/users/${userId}/manuals`);
+        const colRef = collection(db, `manuals/${userId}/items`);
         if (id) {
             // 更新
             const docRef = doc(colRef, id);
@@ -218,7 +220,7 @@ async function deleteManual(manualId) {
     }
 
     try {
-        const docRef = doc(db, `artifacts/${appId}/users/${userId}/manuals`, manualId);
+        const docRef = doc(db, `manuals/${userId}/items`, manualId);
         await deleteDoc(docRef);
         
         // 詳細表示をリセット
