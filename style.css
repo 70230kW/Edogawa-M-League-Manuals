@@ -1,0 +1,97 @@
+/* カスタムスタイル */
+body {
+    font-family: 'Roboto Mono', monospace;
+    background-color: #0a0a0a;
+    color: #e0e0e0;
+    overflow-x: hidden;
+}
+
+/* サイバーな背景 */
+.cyber-bg {
+    background-color: #0d1117;
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* ネオン風の影 */
+.neon-shadow {
+    box-shadow: 0 0 5px #00aaff, 0 0 10px #00aaff, 0 0 15px #00aaff;
+}
+
+.neon-shadow-green {
+    box-shadow: 0 0 5px #00ffaa, 0 0 10px #00ffaa;
+}
+
+.neon-text {
+    text-shadow: 0 0 5px #00aaff, 0 0 10px #00aaff;
+}
+
+/* スクロールバーのスタイル */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #00aaff;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #0077cc;
+}
+
+/* Markdown表示エリアのスタイル */
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+    border-bottom: 1px solid #00aaff;
+    padding-bottom: 0.3em;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    color: #00d9ff;
+}
+
+.markdown-content p {
+    line-height: 1.8;
+    margin-bottom: 1em;
+}
+
+.markdown-content a {
+    color: #00ffaa;
+    text-decoration: underline;
+}
+
+.markdown-content code {
+    background-color: #161b22;
+    padding: 0.2em 0.4em;
+    border-radius: 6px;
+    font-size: 85%;
+    color: #ff79c6;
+}
+
+.markdown-content pre {
+    background-color: #161b22;
+    padding: 1em;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.markdown-content ul, .markdown-content ol {
+    padding-left: 2em;
+    margin-bottom: 1em;
+}
+
+.markdown-content li {
+    margin-bottom: 0.5em;
+}
+
+.markdown-content blockquote {
+    border-left: 4px solid #00aaff;
+    padding-left: 1em;
+    color: #a0a0a0;
+    margin-left: 0;
+}
