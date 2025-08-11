@@ -1,93 +1,109 @@
-/* グローバルスタイルとフォント設定 */
+/* フォントと基本スタイル */
 body {
-    font-family: 'Noto Sans JP', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Quill Editorのダークテーマ用カスタムスタイル */
-#editor-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+.font-sans {
+    font-family: 'Noto Sans JP', sans-serif;
 }
 
-#editor {
-    height: 100%;
-    color: #E2E8F0; /* text-gray-200 */
-    border-bottom-left-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
-    border: 1px solid #4A5568; /* border-gray-600 */
-}
-
-.ql-toolbar {
-    background-color: #2D3748; /* bg-gray-700 */
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
-    border: 1px solid #4A5568 !important; /* border-gray-600 */
-    border-bottom: 1px solid #4A5568 !important;
-}
-
-.ql-toolbar .ql-stroke {
-    stroke: #A0AEC0; /* text-gray-400 */
-}
-.ql-toolbar .ql-fill {
-    fill: #A0AEC0;
-}
-.ql-toolbar .ql-picker-label {
-    color: #A0AEC0;
-}
-.ql-toolbar button:hover .ql-stroke,
-.ql-toolbar button:focus .ql-stroke,
-.ql-toolbar button.ql-active .ql-stroke {
-    stroke: #FFFFFF;
-}
-.ql-toolbar button:hover .ql-fill,
-.ql-toolbar button:focus .ql-fill,
-.ql-toolbar button.ql-active .ql-fill {
-    fill: #FFFFFF;
-}
-.ql-toolbar .ql-picker-label:hover,
-.ql-toolbar .ql-picker-label.ql-active {
-    color: #FFFFFF;
-}
-.ql-toolbar .ql-picker-options {
-    background-color: #2D3748;
-    border-color: #4A5568;
-    color: #E2E8F0;
-}
-.ql-container.ql-snow {
-    border: none;
-}
-.ql-editor {
-    border-radius: 0.5rem;
-}
-.ql-editor.ql-blank::before {
-    color: #718096; /* text-gray-500 */
-    font-style: normal;
+.font-display {
+    font-family: 'Cormorant Garamond', serif;
 }
 
 /* スクロールバーのスタイル */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
 }
 ::-webkit-scrollbar-track {
-    background: #2d3748; /* bg-gray-700 */
+    background: #111827; /* bg-gray-900 */
 }
 ::-webkit-scrollbar-thumb {
-    background: #4a5568; /* bg-gray-600 */
-    border-radius: 4px;
+    background: #374151; /* bg-gray-700 */
+    border-radius: 5px;
+    border: 2px solid #111827;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #718096; /* bg-gray-500 */
+    background: #4b5563; /* bg-gray-600 */
+}
+
+/* Quill Editorのダーク＆ゴールドテーマ */
+#editor {
+    color: #D1D5DB; /* text-gray-300 */
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    border: 1px solid #374151; /* border-gray-700 */
+    border-top: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.ql-toolbar {
+    background-color: #1F2937; /* bg-gray-800 */
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    border: 1px solid #374151 !important;
+    border-bottom: 1px solid #374151 !important;
+}
+
+.ql-toolbar .ql-stroke, .ql-toolbar .ql-picker-label {
+    stroke: #9CA3AF; /* text-gray-400 */
+    color: #9CA3AF;
+}
+.ql-toolbar .ql-fill {
+    fill: #9CA3AF;
+}
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button:focus .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+    stroke: #F59E0B; /* amber-500 */
+}
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button:focus .ql-fill,
+.ql-toolbar button.ql-active .ql-fill {
+    fill: #F59E0B;
+}
+.ql-toolbar .ql-picker-label:hover,
+.ql-toolbar .ql-picker-label.ql-active {
+    color: #F59E0B;
+}
+.ql-toolbar .ql-picker-options {
+    background-color: #111827;
+    border-color: #374151;
+    color: #D1D5DB;
+}
+.ql-container.ql-snow {
+    border: none;
+}
+.ql-editor.ql-blank::before {
+    color: #6B7280; /* text-gray-500 */
+    font-style: normal;
+}
+.ql-editor h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 700;
+    color: #FBBF24; /* amber-400 */
+}
+.ql-editor h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    color: #FBBF24; /* amber-400 */
 }
 
 /* モーダルの表示アニメーション */
-#editor-modal.visible {
+#editor-modal.visible, #history-modal.visible {
     opacity: 1;
 }
-#editor-modal.visible > div {
+#editor-modal.visible > div, #history-modal.visible > div {
     transform: scale(1);
     opacity: 1;
+}
+
+/* 添付ファイルリストのホバーエフェクト */
+.attachment-item:hover .attachment-delete-btn {
+    opacity: 1;
+    transform: translateX(0);
 }
