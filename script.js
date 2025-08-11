@@ -63,24 +63,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let mainUnsubscribe;
     let manualUnsubscribe;
     let categoriesUnsubscribe;
-    let currentUserId = null;
+    let currentUser = null;
     let allManuals = [];
     let allCategories = [];
     let isLocalChange = false;
 
-    // 認証処理
+    // 匿名認証
     auth.onAuthStateChanged(user => {
         if (user) {
-            currentUserId = user.uid;
-            userIdDisplay.textContent = currentUserId;
-            if (mainUnsubscribe) mainUnsubscribe();
-            if (categoriesUnsubscribe) categoriesUnsubscribe();
-            fetchManuals();
-            fetchCategories();
+            currentUser = user;
+            initApp();
         } else {
             auth.signInAnonymously().catch(console.error);
         }
     });
+
+    // アプリケーション初期化
+    const initApp = () => {
+        if (mainUnsubscribe) mainUnsubscribe();
+        if (categoriesUnsubscribe) categoriesUnsubscribe();
+        
+        userIdDisplay.textContent = currentUser.uid;
+        fetchManuals();
+        fetchCategories();
+        lucide.createIcons();
+    };
 
     // マニュアル一覧の取得
     const fetchManuals = () => {
@@ -109,8 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const filteredManuals = allManuals.filter(manual => {
             const titleMatch = manual.title.toLowerCase().includes(searchTerm);
+            const contentMatch = (manual.content || '').toLowerCase().includes(searchTerm);
             const categoryMatch = activeCategory === 'all' || manual.category === activeCategory;
-            return titleMatch && categoryMatch;
+            return (titleMatch || contentMatch) && categoryMatch;
         });
 
         manualsListContainer.innerHTML = '';
@@ -177,9 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (manual.id) {
                 listenToManualChanges(manual.id);
-                renderAttachments(manual.id);
-            } else {
-                attachmentsList.innerHTML = '<p class="text-sm text-gray-500 text-center p-4">保存後にファイルを追加できます。</p>';
             }
             
             editorModal.classList.add('visible');
@@ -198,25 +203,20 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const listenToManualChanges = (manualId) => {
         manualUnsubscribe = manualsCollection.doc(manualId).onSnapshot(doc => {
-            if (!doc.exists) {
-                closeModal();
-                return;
-            }
+            if (!doc.exists || !editorModal.classList.contains('visible')) return;
             const manual = doc.data();
-            if (editorModal.classList.contains('visible')) {
-                if (document.activeElement !== manualTitleInput) {
-                    manualTitleInput.value = manual.title;
-                }
-                if (document.activeElement !== manualCategorySelect) {
-                    manualCategorySelect.value = manual.category || '';
-                }
-                if (!isLocalChange) {
-                    const selection = quill.getSelection();
-                    quill.root.innerHTML = manual.content || '';
-                    if (selection) quill.setSelection(selection);
-                }
-                isLocalChange = false;
+            if (document.activeElement !== manualTitleInput) {
+                manualTitleInput.value = manual.title;
             }
+            if (document.activeElement !== manualCategorySelect) {
+                manualCategorySelect.value = manual.category || '';
+            }
+            if (!isLocalChange) {
+                const selection = quill.getSelection();
+                quill.root.innerHTML = manual.content || '';
+                if (selection) quill.setSelection(selection);
+            }
+            isLocalChange = false;
         });
     };
 
@@ -266,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newDocRef = await manualsCollection.add(data);
                 manualIdInput.value = newDocRef.id;
                 listenToManualChanges(newDocRef.id);
-                renderAttachments(newDocRef.id);
             }
         } catch (error) {
             console.error("保存エラー:", error);
@@ -352,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- 既存の関数群 (変更なし、または軽微な変更) ---
+    // --- その他 & ヘルパー ---
     const closeModal = () => {
         if (manualUnsubscribe) manualUnsubscribe();
         editorModal.classList.remove('visible');
@@ -381,19 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) { console.error("アップロード失敗:", error); alert("ファイルのアップロードに失敗しました。"); }
         e.target.value = '';
-    };
-    const renderAttachments = (manualId) => {
-        manualsCollection.doc(manualId).collection('attachments').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-            attachmentsList.innerHTML = snapshot.empty ? '<p class="text-sm text-gray-500 text-center p-4">添付ファイルはありません。</p>' : '';
-            snapshot.forEach(doc => {
-                const attachment = { id: doc.id, ...doc.data() };
-                const item = document.createElement('div');
-                item.className = 'attachment-item bg-gray-700 p-2 rounded-md flex items-center justify-between text-sm transition-colors hover:bg-gray-600';
-                item.innerHTML = `<a href="${attachment.url}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 truncate text-gray-300"><i data-lucide="file" class="h-4 w-4 flex-shrink-0"></i><span class="truncate">${escapeHTML(attachment.name)}</span></a><button class="attachment-delete-btn text-gray-500 hover:text-red-400 opacity-0 transform translate-x-2 transition-all" data-id="${attachment.id}" data-name="${attachment.name}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>`;
-                attachmentsList.appendChild(item);
-            });
-            lucide.createIcons();
-        });
     };
     const showVersionHistory = async () => {
         const manualId = manualIdInput.value; if (!manualId) return;
@@ -432,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const setSaveButtonState = (isSaving) => { saveManualBtn.disabled = isSaving; saveBtnText.textContent = isSaving ? '保存中...' : '保存'; saveSpinner.style.display = isSaving ? 'block' : 'none'; };
     const escapeHTML = (str) => str ? String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]) : '';
 
-    // イベントリスナー
+    // --- イベントリスナー ---
     newManualBtn.addEventListener('click', () => openEditor());
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
@@ -464,19 +450,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     await manualsCollection.doc(manualId).update({ title: d.title, category: d.category, content: d.content, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
                     closeHistoryModal();
                 } catch (error) { console.error("復元エラー:", error); }
-            }
-        }
-    });
-    attachmentsList.addEventListener('click', async e => {
-        const deleteBtn = e.target.closest('.attachment-delete-btn');
-        if (deleteBtn) {
-            const manualId = manualIdInput.value;
-            const attachmentId = deleteBtn.dataset.id;
-            const attachmentName = deleteBtn.dataset.name;
-            if (confirm(`ファイル「${attachmentName}」を削除しますか？`)) {
-                try {
-                    await manualsCollection.doc(manualId).collection('attachments').doc(attachmentId).delete();
-                } catch (error) { console.error("添付ファイルの削除に失敗:", error); }
             }
         }
     });
