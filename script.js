@@ -79,22 +79,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- データ取得 ---
     const fetchManuals = () => {
         loader.style.display = 'flex';
+        manualsListContainer.innerHTML = '';
+        emptyState.style.display = 'none';
+
         mainUnsubscribe = manualsCollection.orderBy('updatedAt', 'desc').onSnapshot(snapshot => {
             allManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), plainText: new DOMParser().parseFromString(doc.data().content || '', 'text/html').body.textContent }));
             renderManuals();
             loader.style.display = 'none';
-        }, console.error);
+        }, error => {
+            console.error("マニュアルの読み込みに失敗しました。Firestoreのインデックスが作成されていない可能性があります。", error);
+            loader.style.display = 'none';
+            manualsListContainer.innerHTML = `<div class="col-span-full text-center text-red-400 p-8 bg-red-900/20 rounded-lg">
+                <h3 class="font-bold text-lg mb-2">データ読み込みエラー</h3>
+                <p>マニュアルの読み込みに失敗しました。<br>Firebaseコンソールでインデックスが正しく設定されているか確認してください。</p>
+            </div>`;
+        });
     };
 
     const fetchCategories = () => {
-        // FirestoreのorderByからクライアントサイドでのソートに変更
         categoriesUnsubscribe = categoriesCollection.onSnapshot(snapshot => {
             allCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // ふりがなでソート
-            allCategories.sort((a, b) => {
-                if (!a.furigana || !b.furigana) return 0;
-                return a.furigana.localeCompare(b.furigana, 'ja');
-            });
+            allCategories.sort((a, b) => (a.furigana || '').localeCompare(b.furigana || '', 'ja'));
             renderCategoryFilter();
             populateEditorCategoryDropdown();
             renderCategoryManager();
@@ -215,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const newName = item.querySelector('.edit-name-input').value.trim();
             const newFurigana = item.querySelector('.edit-furigana-input').value.trim();
             if (newName && newFurigana) {
-                // データベースエラーを防ぐため、関連マニュアルの一括更新は行わない
                 await categoriesCollection.doc(id).update({ name: newName, furigana: newFurigana });
                 item.classList.remove('is-editing');
             }
