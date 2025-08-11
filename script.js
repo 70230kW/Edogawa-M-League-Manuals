@@ -14,8 +14,7 @@ import {
     writeBatch,
     getDocs,
     where,
-    increment,
-    getDoc
+    increment
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- グローバル変数と定数 ---
@@ -60,6 +59,7 @@ const contentInput = document.getElementById('content-input');
 const addManualBtn = document.getElementById('add-manual-btn');
 const toggleSelectModeBtn = document.getElementById('toggle-select-mode-btn');
 const deleteSelectedBtn = document.getElementById('delete-selected-btn');
+const searchInput = document.getElementById('search-input');
 
 
 // --- Firebaseの初期化と認証 ---
@@ -144,23 +144,42 @@ function renderCategories() {
 
 // モーダル内のカテゴリプルダウンを描画
 function renderCategoryDropdown() {
+    const currentCategoryValue = categorySelect.value;
     categorySelect.innerHTML = `
-        <option value="" disabled selected>カテゴリを選択してください</option>
+        <option value="" disabled>カテゴリを選択してください</option>
         ${currentCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('')}
         <option value="add_new_category">＋カテゴリを追加</option>
     `;
+    // 編集時に元のカテゴリが選択された状態を維持
+    if (currentCategories.some(c => c.name === currentCategoryValue)) {
+        categorySelect.value = currentCategoryValue;
+    } else {
+        categorySelect.value = "";
+    }
 }
 
 // マニュアルリストの描画
 function renderManualList() {
-    const manualsToShow = selectedCategory === 'all' 
-        ? currentManuals 
-        : currentManuals.filter(m => m.category === selectedCategory);
+    let manualsToShow = [...currentManuals];
+    const searchTerm = searchInput.value.trim().toLowerCase();
+
+    if (searchTerm) {
+        manualListTitle.textContent = `'${searchTerm}' の検索結果`;
+        manualsToShow = manualsToShow.filter(m =>
+            m.title.toLowerCase().includes(searchTerm) ||
+            m.content.toLowerCase().includes(searchTerm)
+        );
+    } else {
+        manualListTitle.textContent = selectedCategory === 'all' ? 'すべてのマニュアル' : `カテゴリ: ${selectedCategory}`;
+        if (selectedCategory !== 'all') {
+            manualsToShow = manualsToShow.filter(m => m.category === selectedCategory);
+        }
+    }
     
-    manualListTitle.textContent = selectedCategory === 'all' ? 'すべてのマニュアル' : `カテゴリ: ${selectedCategory}`;
+    manualsToShow.sort((a, b) => (b.updatedAt?.toDate() || 0) - (a.updatedAt?.toDate() || 0));
 
     if (manualsToShow.length === 0) {
-        manualList.innerHTML = `<p class="text-gray-500">このカテゴリにはマニュアルがありません。</p>`;
+        manualList.innerHTML = `<p class="text-gray-500">マニュアルがありません。</p>`;
         return;
     }
 
@@ -217,6 +236,7 @@ function openModal(manual = null) {
     } else {
         modalTitle.textContent = '新規マニュアル作成';
         manualIdInput.value = '';
+        categorySelect.value = ''; // 新規作成時は未選択に
     }
     manualModal.classList.remove('hidden');
 }
@@ -329,6 +349,12 @@ async function editCategoryName(categoryId, oldName) {
         });
 
         await batch.commit();
+        
+        // 表示を更新
+        if (selectedCategory === oldName) {
+            selectedCategory = newName;
+        }
+
         alert("カテゴリ名を更新しました。");
     } catch (error) {
         console.error("Error updating category name:", error);
@@ -357,6 +383,7 @@ function setupEventListeners() {
             editCategoryName(editIcon.dataset.id, editIcon.dataset.name);
         } else if (categoryLink) {
             selectedCategory = categoryLink.dataset.category;
+            searchInput.value = ''; // 検索をクリア
             renderCategories();
             renderManualList();
         }
@@ -365,6 +392,11 @@ function setupEventListeners() {
     // マニュアル選択
     manualList.addEventListener('click', (e) => {
         const card = e.target.closest('.manual-item-card');
+        const checkbox = e.target.closest('.manual-checkbox');
+        if (isSelectMode && checkbox) {
+            // チェックボックスのクリックはデフォルトの動作に任せる
+            return;
+        }
         if (card && !isSelectMode) {
             showManualDetail(card.dataset.id);
         }
@@ -407,6 +439,14 @@ function setupEventListeners() {
     
     // 複数選択削除ボタン
     deleteSelectedBtn.addEventListener('click', deleteSelectedManuals);
+
+    // 検索入力
+    searchInput.addEventListener('input', () => {
+        // 検索中はカテゴリ選択を解除したように見せる
+        selectedCategory = 'all'; 
+        renderCategories(); // サイドバーのハイライトを解除
+        renderManualList(); // 検索結果でリストを更新
+    });
 }
 
 // --- アプリケーションの開始 ---
