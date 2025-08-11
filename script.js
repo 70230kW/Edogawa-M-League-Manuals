@@ -61,7 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
             currentUser = user;
             initApp();
         } else {
-            auth.signInAnonymously().catch(error => console.error("Anonymous sign-in failed:", error));
+            auth.signInAnonymously().catch(error => {
+                console.error("Anonymous sign-in failed:", error);
+                document.body.innerHTML = `<div class="w-full h-screen flex items-center justify-center text-center text-red-400 p-8 bg-red-900/20"><div><h3 class="font-bold text-lg mb-2">認証エラー</h3><p>Firebaseへの接続に失敗しました。<br>設定を確認するか、時間をおいて再度お試しください。</p></div></div>`;
+            });
         }
     });
 
@@ -82,16 +85,19 @@ document.addEventListener('DOMContentLoaded', () => {
         manualsListContainer.innerHTML = '';
         emptyState.style.display = 'none';
 
-        mainUnsubscribe = manualsCollection.orderBy('updatedAt', 'desc').onSnapshot(snapshot => {
+        // orderByを削除し、クライアントサイドでソートするように変更
+        mainUnsubscribe = manualsCollection.onSnapshot(snapshot => {
             allManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), plainText: new DOMParser().parseFromString(doc.data().content || '', 'text/html').body.textContent }));
+            // 更新日時の降順でソート
+            allManuals.sort((a, b) => (b.updatedAt?.toDate() || 0) - (a.updatedAt?.toDate() || 0));
             renderManuals();
             loader.style.display = 'none';
         }, error => {
-            console.error("マニュアルの読み込みに失敗しました。Firestoreのインデックスが作成されていない可能性があります。", error);
+            console.error("マニュアルの読み込みに失敗しました。", error);
             loader.style.display = 'none';
             manualsListContainer.innerHTML = `<div class="col-span-full text-center text-red-400 p-8 bg-red-900/20 rounded-lg">
                 <h3 class="font-bold text-lg mb-2">データ読み込みエラー</h3>
-                <p>マニュアルの読み込みに失敗しました。<br>Firebaseコンソールでインデックスが正しく設定されているか確認してください。</p>
+                <p>マニュアルの読み込みに失敗しました。<br>Firebaseのデータベースルールなどを確認してください。</p>
             </div>`;
         });
     };
@@ -112,8 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeCategory = categoryFilterSelect.value;
         
         const filteredManuals = allManuals.filter(manual => {
-            const titleMatch = manual.title.toLowerCase().includes(searchTerm);
-            const contentMatch = manual.plainText.toLowerCase().includes(searchTerm);
+            const titleMatch = (manual.title || '').toLowerCase().includes(searchTerm);
+            const contentMatch = (manual.plainText || '').toLowerCase().includes(searchTerm);
             const categoryMatch = activeCategory === 'all' || manual.category === activeCategory;
             return (titleMatch || contentMatch) && categoryMatch;
         });
@@ -138,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="flex-grow">
                 ${manual.category ? `<span class="text-xs bg-gray-700 text-amber-400 font-semibold px-2.5 py-1 rounded-full mb-3 inline-block font-sans">${escapeHTML(manual.category)}</span>` : ''}
                 <h3 class="text-xl font-bold text-white mb-3 font-display">${escapeHTML(manual.title)}</h3>
-                <p class="text-base text-gray-400 font-sans">${escapeHTML(manual.plainText.slice(0, 80))}...</p>
+                <p class="text-base text-gray-400 font-sans">${escapeHTML((manual.plainText || '').slice(0, 80))}...</p>
             </div>
             <div class="mt-5 text-xs text-gray-500 pt-4 border-t border-gray-700/50 font-sans">
                 最終更新: ${manual.updatedAt ? new Date(manual.updatedAt.toDate()).toLocaleString('ja-JP') : '不明'}
@@ -358,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         quill.on('text-change', (d, o, source) => { if (source === 'user') isLocalChange = true; });
     };
     const setSaveButtonState = (isSaving) => { saveManualBtn.disabled = isSaving; saveBtnText.textContent = isSaving ? '保存中...' : '保存'; saveSpinner.style.display = isSaving ? 'block' : 'none'; };
-    const escapeHTML = (str) => str ? String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]) : '';
+    const escapeHTML = (str) => str ? String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#0.39;'})[m]) : '';
 
     // --- イベントリスナー ---
     newManualBtn.addEventListener('click', () => openEditor());
