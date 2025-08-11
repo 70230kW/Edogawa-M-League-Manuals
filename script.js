@@ -14,7 +14,8 @@ import {
     writeBatch,
     getDocs,
     where,
-    increment
+    increment,
+    orderBy
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- グローバル変数と定数 ---
@@ -48,7 +49,7 @@ const manualTitle = document.getElementById('manual-title');
 const manualLastUpdated = document.getElementById('manual-last-updated');
 const manualContent = document.getElementById('manual-content');
 const manualModal = document.getElementById('manual-modal');
-const modalTitle = document.getElementById('modal-title');
+const modalTitleEl = document.getElementById('modal-title'); // Renamed to avoid conflict
 const manualForm = document.getElementById('manual-form');
 const manualIdInput = document.getElementById('manual-id');
 const titleInput = document.getElementById('title-input');
@@ -90,8 +91,9 @@ function setupListeners() {
     
     // カテゴリの監視
     const categoriesColRef = collection(db, `categories/${userId}/items`);
+    const qCategories = query(categoriesColRef, orderBy("createdAt")); // 作成順にソート
     if (categoriesUnsubscribe) categoriesUnsubscribe();
-    categoriesUnsubscribe = onSnapshot(query(categoriesColRef), (snapshot) => {
+    categoriesUnsubscribe = onSnapshot(qCategories, (snapshot) => {
         currentCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderCategories();
         renderCategoryDropdown();
@@ -115,7 +117,7 @@ async function setupInitialCategories() {
         const batch = writeBatch(db);
         defaultCategories.forEach(name => {
             const docRef = doc(categoriesColRef);
-            batch.set(docRef, { name });
+            batch.set(docRef, { name: name, createdAt: serverTimestamp() });
         });
         await batch.commit();
     }
@@ -228,13 +230,13 @@ function openModal(manual = null) {
     renderCategoryDropdown();
 
     if (manual) {
-        modalTitle.textContent = 'マニュアル編集';
+        modalTitleEl.textContent = 'マニュアル編集';
         manualIdInput.value = manual.id;
         titleInput.value = manual.title;
         categorySelect.value = manual.category;
         contentInput.value = manual.content;
     } else {
-        modalTitle.textContent = '新規マニュアル作成';
+        modalTitleEl.textContent = '新規マニュアル作成';
         manualIdInput.value = '';
         categorySelect.value = ''; // 新規作成時は未選択に
     }
@@ -259,7 +261,7 @@ async function saveManual() {
         const existingCategory = currentCategories.find(c => c.name === newCategoryName);
         if (!existingCategory) {
             const categoriesColRef = collection(db, `categories/${userId}/items`);
-            await addDoc(categoriesColRef, { name: newCategoryName });
+            await addDoc(categoriesColRef, { name: newCategoryName, createdAt: serverTimestamp() });
         }
         category = newCategoryName;
     }
