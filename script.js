@@ -91,10 +91,17 @@ function setupListeners() {
     
     // カテゴリの監視
     const categoriesColRef = collection(db, `categories/${userId}/items`);
-    const qCategories = query(categoriesColRef, orderBy("createdAt")); // 作成順にソート
+    // orderByを削除し、より安定したクエリに変更
+    const qCategories = query(categoriesColRef);
     if (categoriesUnsubscribe) categoriesUnsubscribe();
     categoriesUnsubscribe = onSnapshot(qCategories, (snapshot) => {
         currentCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // JavaScript側で作成日時順にソート
+        currentCategories.sort((a, b) => {
+            const aDate = a.createdAt?.toDate() || 0;
+            const bDate = b.createdAt?.toDate() || 0;
+            return aDate - bDate;
+        });
         renderCategories();
         renderCategoryDropdown();
     });
