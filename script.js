@@ -72,9 +72,7 @@ async function initializeFirebase() {
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
-                // 各リスナーと初期データ設定を呼び出す
-                setupCategoryListenerAndInitialData();
-                setupManualListener();
+                await initializeAppData(); // 認証後にアプリデータを初期化
             } else {
                 await signInAnonymously(auth);
             }
@@ -85,57 +83,66 @@ async function initializeFirebase() {
     }
 }
 
-// --- データ監視リスナー (修正版) ---
+// --- アプリケーションデータ初期化 (修正版) ---
+async function initializeAppData() {
+    // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
+    await setupInitialCategories();
+    // 2. その後、データのリアルタイム監視を開始する
+    setupListeners();
+}
 
-// カテゴリのリスナーと初期データ設定を統合
-function setupCategoryListenerAndInitialData() {
+// --- データ監視リスナー ---
+function setupListeners() {
     if (!userId) return;
+    setupCategoryListener();
+    setupManualListener();
+}
+
+// カテゴリ用のリスナー
+function setupCategoryListener() {
     if (categoriesUnsubscribe) categoriesUnsubscribe();
-
     const categoriesColRef = collection(db, `categories/${userId}/items`);
-    let isInitialCheckComplete = false;
-
-    categoriesUnsubscribe = onSnapshot(query(categoriesColRef), async (snapshot) => {
-        // データ変更のたびにこの部分が実行される
+    const qCategories = query(categoriesColRef);
+    categoriesUnsubscribe = onSnapshot(qCategories, (snapshot) => {
         currentCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         currentCategories.sort((a, b) => (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0));
         renderCategories();
         renderCategoryDropdown();
-
-        // 初回読み込み時に一度だけ実行し、デフォルトカテゴリの存在を確認・作成する
-        if (!isInitialCheckComplete) {
-            isInitialCheckComplete = true;
-            const defaultCategoryNames = ["対局", "順位表", "トロフィー", "データ分析", "個人成績", "対局履歴", "直接対決", "詳細履歴", "雀士管理"];
-            const existingCategoryNames = new Set(currentCategories.map(c => c.name));
-            const missingCategories = defaultCategoryNames.filter(name => !existingCategoryNames.has(name));
-
-            if (missingCategories.length > 0) {
-                const batch = writeBatch(db);
-                missingCategories.forEach(name => {
-                    const docRef = doc(categoriesColRef);
-                    batch.set(docRef, { name: name, createdAt: serverTimestamp() });
-                });
-                try {
-                    await batch.commit();
-                    // コミットが成功すると、onSnapshotが再度トリガーされ、リストが自動的に更新される
-                } catch (e) {
-                    console.error("Failed to add default categories:", e);
-                }
-            }
-        }
     });
 }
 
 // マニュアル用のリスナー
 function setupManualListener() {
-    if (!userId) return;
     if (manualsUnsubscribe) manualsUnsubscribe();
-
     const manualsColRef = collection(db, `manuals/${userId}/items`);
     manualsUnsubscribe = onSnapshot(query(manualsColRef), (snapshot) => {
         currentManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderManualList();
     });
+}
+
+// --- 初期データ設定 (修正版) ---
+async function setupInitialCategories() {
+    if (!userId) return;
+    const defaultCategoryNames = ["対局", "順位表", "トロフィー", "データ分析", "個人成績", "対局履歴", "直接対決", "詳細履歴", "雀士管理"];
+    const categoriesColRef = collection(db, `categories/${userId}/items`);
+
+    const snapshot = await getDocs(categoriesColRef);
+    const existingCategoryNames = new Set(snapshot.docs.map(doc => doc.data().name));
+    const missingCategories = defaultCategoryNames.filter(name => !existingCategoryNames.has(name));
+
+    if (missingCategories.length > 0) {
+        const batch = writeBatch(db);
+        missingCategories.forEach(name => {
+            const docRef = doc(categoriesColRef);
+            batch.set(docRef, { name: name, createdAt: serverTimestamp() });
+        });
+        try {
+            await batch.commit();
+        } catch (e) {
+            console.error("Failed to add default categories:", e);
+        }
+    }
 }
 
 
