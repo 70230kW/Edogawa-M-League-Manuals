@@ -72,8 +72,13 @@ async function initializeFirebase() {
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
-                // 認証後にアプリデータを初期化する新しい関数を呼び出す
-                await initializeAppData();
+                
+                // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
+                await ensureDefaultCategories();
+                
+                // 2. その後、データのリアルタイム監視を開始する
+                setupListeners();
+
             } else {
                 await signInAnonymously(auth);
             }
@@ -82,14 +87,6 @@ async function initializeFirebase() {
         console.error("Firebase initialization failed:", error);
         alert("アプリケーションの初期化に失敗しました。");
     }
-}
-
-// --- アプリケーションデータ初期化 (新設) ---
-async function initializeAppData() {
-    // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
-    await ensureDefaultCategories();
-    // 2. その後、データのリアルタイム監視を開始する
-    setupListeners();
 }
 
 // --- 初期データ設定 (修正版) ---
@@ -106,12 +103,14 @@ async function ensureDefaultCategories() {
         const batch = writeBatch(db);
         missingCategories.forEach(name => {
             const docRef = doc(categoriesColRef);
-            batch.set(docRef, { name: name, createdAt: serverTimestamp() });
+            // serverTimestamp()の代わりにクライアントのDateオブジェクトを使用し、確実性を高める
+            batch.set(docRef, { name: name, createdAt: new Date() });
         });
         try {
             await batch.commit();
         } catch (e) {
-            console.error("Failed to add default categories:", e);
+            console.error("FATAL: Failed to add default categories.", e);
+            alert("カテゴリの初期設定に失敗しました。コンソールを確認してください。");
         }
     }
 }
@@ -131,6 +130,7 @@ function setupCategoryListener() {
     const qCategories = query(categoriesColRef);
     categoriesUnsubscribe = onSnapshot(qCategories, (snapshot) => {
         currentCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // FirestoreのTimestampオブジェクトをDateオブジェクトに変換してからソート
         currentCategories.sort((a, b) => (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0));
         renderCategories();
         renderCategoryDropdown();
@@ -285,7 +285,7 @@ async function saveManual() {
         const existingCategory = currentCategories.find(c => c.name === newCategoryName);
         if (!existingCategory) {
             const categoriesColRef = collection(db, `categories/${userId}/items`);
-            await addDoc(categoriesColRef, { name: newCategoryName, createdAt: serverTimestamp() });
+            await addDoc(categoriesColRef, { name: newCategoryName, createdAt: new Date() });
         }
         category = newCategoryName;
     }
