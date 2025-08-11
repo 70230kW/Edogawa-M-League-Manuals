@@ -72,13 +72,8 @@ async function initializeFirebase() {
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
-                
-                // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
-                await ensureDefaultCategories();
-                
-                // 2. その後、データのリアルタイム監視を開始する
-                setupListeners();
-
+                // 認証後にアプリデータを初期化する新しい関数を呼び出す
+                await initializeAppData();
             } else {
                 await signInAnonymously(auth);
             }
@@ -87,6 +82,14 @@ async function initializeFirebase() {
         console.error("Firebase initialization failed:", error);
         alert("アプリケーションの初期化に失敗しました。");
     }
+}
+
+// --- アプリケーションデータ初期化 (新設) ---
+async function initializeAppData() {
+    // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
+    await ensureDefaultCategories();
+    // 2. その後、データのリアルタイム監視を開始する
+    setupListeners();
 }
 
 // --- 初期データ設定 (修正版) ---
