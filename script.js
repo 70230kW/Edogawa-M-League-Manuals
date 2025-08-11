@@ -87,8 +87,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchCategories = () => {
-        categoriesUnsubscribe = categoriesCollection.orderBy('furigana').onSnapshot(snapshot => {
+        // FirestoreのorderByからクライアントサイドでのソートに変更
+        categoriesUnsubscribe = categoriesCollection.onSnapshot(snapshot => {
             allCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // ふりがなでソート
+            allCategories.sort((a, b) => {
+                if (!a.furigana || !b.furigana) return 0;
+                return a.furigana.localeCompare(b.furigana, 'ja');
+            });
             renderCategoryFilter();
             populateEditorCategoryDropdown();
             renderCategoryManager();
@@ -209,15 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const newName = item.querySelector('.edit-name-input').value.trim();
             const newFurigana = item.querySelector('.edit-furigana-input').value.trim();
             if (newName && newFurigana) {
-                const oldDoc = await categoriesCollection.doc(id).get();
-                const oldName = oldDoc.data().name;
+                // データベースエラーを防ぐため、関連マニュアルの一括更新は行わない
                 await categoriesCollection.doc(id).update({ name: newName, furigana: newFurigana });
-                if (oldName !== newName) {
-                    const batch = db.batch();
-                    const manualsToUpdate = await manualsCollection.where("category", "==", oldName).get();
-                    manualsToUpdate.forEach(doc => batch.update(doc.ref, { category: newName }));
-                    await batch.commit();
-                }
                 item.classList.remove('is-editing');
             }
         }
