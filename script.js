@@ -91,7 +91,6 @@ function setupListeners() {
     
     // カテゴリの監視
     const categoriesColRef = collection(db, `categories/${userId}/items`);
-    // orderByを削除し、より安定したクエリに変更
     const qCategories = query(categoriesColRef);
     if (categoriesUnsubscribe) categoriesUnsubscribe();
     categoriesUnsubscribe = onSnapshot(qCategories, (snapshot) => {
@@ -115,18 +114,27 @@ function setupListeners() {
     });
 }
 
-// --- 初期データ設定 ---
+// --- 初期データ設定 (修正版) ---
 async function setupInitialCategories() {
-    const defaultCategories = ["対局", "順位表", "トロフィー", "データ分析", "個人成績", "対局履歴", "直接対決", "詳細履歴", "雀士管理"];
+    const defaultCategoryNames = ["対局", "順位表", "トロフィー", "データ分析", "個人成績", "対局履歴", "直接対決", "詳細履歴", "雀士管理"];
     const categoriesColRef = collection(db, `categories/${userId}/items`);
+    
+    // 既存のカテゴリを取得
     const snapshot = await getDocs(categoriesColRef);
-    if (snapshot.empty) {
+    const existingCategoryNames = new Set(snapshot.docs.map(doc => doc.data().name));
+
+    // 不足しているデフォルトカテゴリを特定
+    const missingCategories = defaultCategoryNames.filter(name => !existingCategoryNames.has(name));
+
+    // 不足しているカテゴリがあれば追加
+    if (missingCategories.length > 0) {
         const batch = writeBatch(db);
-        defaultCategories.forEach(name => {
+        missingCategories.forEach(name => {
             const docRef = doc(categoriesColRef);
             batch.set(docRef, { name: name, createdAt: serverTimestamp() });
         });
         await batch.commit();
+        console.log(`Added ${missingCategories.length} missing default categories.`);
     }
 }
 
