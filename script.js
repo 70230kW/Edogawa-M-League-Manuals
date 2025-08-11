@@ -39,6 +39,8 @@ let isSelectMode = false;
 const markdownConverter = new showdown.Converter();
 
 // --- DOM要素の取得 ---
+const loadingOverlay = document.getElementById('loading-overlay');
+const appContainer = document.getElementById('app');
 const categoryList = document.getElementById('category-list');
 const manualList = document.getElementById('manual-list');
 const manualListTitle = document.getElementById('manual-list-title');
@@ -84,12 +86,15 @@ async function initializeFirebase() {
     }
 }
 
-// --- アプリケーションデータ初期化 (新設) ---
+// --- アプリケーションデータ初期化 (修正版) ---
 async function initializeAppData() {
     // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
     await ensureDefaultCategories();
     // 2. その後、データのリアルタイム監視を開始する
     setupListeners();
+    // 3. 全ての準備が整ったら、ローディング画面を非表示にする
+    loadingOverlay.style.display = 'none';
+    appContainer.style.opacity = '1';
 }
 
 // --- 初期データ設定 (修正版) ---
