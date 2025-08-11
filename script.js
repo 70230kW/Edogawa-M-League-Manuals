@@ -62,7 +62,7 @@ const deleteSelectedBtn = document.getElementById('delete-selected-btn');
 const searchInput = document.getElementById('search-input');
 
 
-// --- Firebaseの初期化と認証 ---
+// --- Firebaseの初期化と認証 (修正版) ---
 async function initializeFirebase() {
     try {
         const app = initializeApp(firebaseConfig);
@@ -72,7 +72,8 @@ async function initializeFirebase() {
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
-                await initializeAppData(); // 認証後にアプリデータを初期化
+                // 認証後にアプリデータを初期化する新しい関数を呼び出す
+                await initializeAppData();
             } else {
                 await signInAnonymously(auth);
             }
@@ -83,13 +84,38 @@ async function initializeFirebase() {
     }
 }
 
-// --- アプリケーションデータ初期化 (修正版) ---
+// --- アプリケーションデータ初期化 (新設) ---
 async function initializeAppData() {
     // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
-    await setupInitialCategories();
+    await ensureDefaultCategories();
     // 2. その後、データのリアルタイム監視を開始する
     setupListeners();
 }
+
+// --- 初期データ設定 (修正版) ---
+async function ensureDefaultCategories() {
+    if (!userId) return;
+    const defaultCategoryNames = ["対局", "順位表", "トロフィー", "データ分析", "個人成績", "対局履歴", "直接対決", "詳細履歴", "雀士管理"];
+    const categoriesColRef = collection(db, `categories/${userId}/items`);
+
+    const snapshot = await getDocs(categoriesColRef);
+    const existingCategoryNames = new Set(snapshot.docs.map(doc => doc.data().name));
+    const missingCategories = defaultCategoryNames.filter(name => !existingCategoryNames.has(name));
+
+    if (missingCategories.length > 0) {
+        const batch = writeBatch(db);
+        missingCategories.forEach(name => {
+            const docRef = doc(categoriesColRef);
+            batch.set(docRef, { name: name, createdAt: serverTimestamp() });
+        });
+        try {
+            await batch.commit();
+        } catch (e) {
+            console.error("Failed to add default categories:", e);
+        }
+    }
+}
+
 
 // --- データ監視リスナー ---
 function setupListeners() {
@@ -119,30 +145,6 @@ function setupManualListener() {
         currentManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderManualList();
     });
-}
-
-// --- 初期データ設定 (修正版) ---
-async function setupInitialCategories() {
-    if (!userId) return;
-    const defaultCategoryNames = ["対局", "順位表", "トロフィー", "データ分析", "個人成績", "対局履歴", "直接対決", "詳細履歴", "雀士管理"];
-    const categoriesColRef = collection(db, `categories/${userId}/items`);
-
-    const snapshot = await getDocs(categoriesColRef);
-    const existingCategoryNames = new Set(snapshot.docs.map(doc => doc.data().name));
-    const missingCategories = defaultCategoryNames.filter(name => !existingCategoryNames.has(name));
-
-    if (missingCategories.length > 0) {
-        const batch = writeBatch(db);
-        missingCategories.forEach(name => {
-            const docRef = doc(categoriesColRef);
-            batch.set(docRef, { name: name, createdAt: serverTimestamp() });
-        });
-        try {
-            await batch.commit();
-        } catch (e) {
-            console.error("Failed to add default categories:", e);
-        }
-    }
 }
 
 
