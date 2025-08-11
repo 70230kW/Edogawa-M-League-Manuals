@@ -1,114 +1,93 @@
-/* カスタムスタイル */
+/* グローバルスタイルとフォント設定 */
 body {
-    font-family: "游ゴシック", "Yu Gothic", "YuGothic", sans-serif;
-    background-color: #0a0a0a;
-    color: #e0e0e0;
-    overflow-x: hidden;
+    font-family: 'Noto Sans JP', 'Roboto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* サイバーな背景 */
-.cyber-bg {
-    background-color: #0d1117;
-    background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
+/* Quill Editorのダークテーマ用カスタムスタイル */
+#editor-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-/* ネオン風の影 */
-.neon-shadow {
-    box-shadow: 0 0 5px #00aaff, 0 0 10px #00aaff, 0 0 15px #00aaff;
+#editor {
+    height: 100%;
+    color: #E2E8F0; /* text-gray-200 */
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    border: 1px solid #4A5568; /* border-gray-600 */
 }
 
-.neon-shadow-green {
-    box-shadow: 0 0 5px #00ffaa, 0 0 10px #00ffaa;
+.ql-toolbar {
+    background-color: #2D3748; /* bg-gray-700 */
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    border: 1px solid #4A5568 !important; /* border-gray-600 */
+    border-bottom: 1px solid #4A5568 !important;
 }
 
-.neon-text {
-    text-shadow: 0 0 5px #00aaff, 0 0 10px #00aaff;
+.ql-toolbar .ql-stroke {
+    stroke: #A0AEC0; /* text-gray-400 */
+}
+.ql-toolbar .ql-fill {
+    fill: #A0AEC0;
+}
+.ql-toolbar .ql-picker-label {
+    color: #A0AEC0;
+}
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button:focus .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+    stroke: #FFFFFF;
+}
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button:focus .ql-fill,
+.ql-toolbar button.ql-active .ql-fill {
+    fill: #FFFFFF;
+}
+.ql-toolbar .ql-picker-label:hover,
+.ql-toolbar .ql-picker-label.ql-active {
+    color: #FFFFFF;
+}
+.ql-toolbar .ql-picker-options {
+    background-color: #2D3748;
+    border-color: #4A5568;
+    color: #E2E8F0;
+}
+.ql-container.ql-snow {
+    border: none;
+}
+.ql-editor {
+    border-radius: 0.5rem;
+}
+.ql-editor.ql-blank::before {
+    color: #718096; /* text-gray-500 */
+    font-style: normal;
 }
 
 /* スクロールバーのスタイル */
 ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: #2d3748; /* bg-gray-700 */
 }
-
 ::-webkit-scrollbar-thumb {
-    background: #00aaff;
+    background: #4a5568; /* bg-gray-600 */
     border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-    background: #0077cc;
+    background: #718096; /* bg-gray-500 */
 }
 
-/* Markdown表示エリアのスタイル */
-.markdown-content h1, .markdown-content h2, .markdown-content h3 {
-    border-bottom: 1px solid #00aaff;
-    padding-bottom: 0.3em;
-    margin-top: 1.5em;
-    margin-bottom: 1em;
-    color: #00d9ff;
+/* モーダルの表示アニメーション */
+#editor-modal.visible {
+    opacity: 1;
 }
-
-.markdown-content p {
-    line-height: 1.8;
-    margin-bottom: 1em;
-}
-
-.markdown-content a {
-    color: #00ffaa;
-    text-decoration: underline;
-}
-
-.markdown-content code {
-    background-color: #161b22;
-    padding: 0.2em 0.4em;
-    border-radius: 6px;
-    font-size: 85%;
-    color: #ff79c6;
-}
-
-.markdown-content pre {
-    background-color: #161b22;
-    padding: 1em;
-    border-radius: 8px;
-    overflow-x: auto;
-}
-
-.markdown-content ul, .markdown-content ol {
-    padding-left: 2em;
-    margin-bottom: 1em;
-}
-
-.markdown-content li {
-    margin-bottom: 0.5em;
-}
-
-.markdown-content blockquote {
-    border-left: 4px solid #00aaff;
-    padding-left: 1em;
-    color: #a0a0a0;
-    margin-left: 0;
-}
-
-/* 複数選択モードのチェックボックス */
-.manual-checkbox {
-    transform: scale(1.2);
-    margin-right: 12px;
-    accent-color: #00aaff;
-}
-
-/* カテゴリ編集アイコン */
-.edit-category-icon {
-    cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 0.2s;
-}
-.edit-category-icon:hover {
+#editor-modal.visible > div {
+    transform: scale(1);
     opacity: 1;
 }
