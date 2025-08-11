@@ -35,6 +35,7 @@ let currentManuals = [];
 let currentCategories = [];
 let selectedCategory = 'all';
 let isSelectMode = false;
+let isInitialized = false; // 初期化処理の実行を管理するフラグ
 
 const markdownConverter = new showdown.Converter();
 
@@ -72,29 +73,35 @@ async function initializeFirebase() {
         auth = getAuth(app);
 
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
+            if (user && !isInitialized) {
+                isInitialized = true; // 初期化処理は一度だけ実行
                 userId = user.uid;
-                // 認証後にアプリデータを初期化する新しい関数を呼び出す
                 await initializeAppData();
-            } else {
+            } else if (!user) {
+                isInitialized = false; // ユーザーがサインアウトした場合に備える
                 await signInAnonymously(auth);
             }
         });
     } catch (error) {
         console.error("Firebase initialization failed:", error);
-        alert("アプリケーションの初期化に失敗しました。");
+        showInitializationError("Firebaseの初期化に失敗しました。");
     }
 }
 
 // --- アプリケーションデータ初期化 (修正版) ---
 async function initializeAppData() {
-    // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
-    await ensureDefaultCategories();
-    // 2. その後、データのリアルタイム監視を開始する
-    setupListeners();
-    // 3. 全ての準備が整ったら、ローディング画面を非表示にする
-    loadingOverlay.style.display = 'none';
-    appContainer.style.opacity = '1';
+    try {
+        // 1. 最初にデフォルトカテゴリの存在を確認し、なければ作成する
+        await ensureDefaultCategories();
+        // 2. その後、データのリアルタイム監視を開始する
+        setupListeners();
+        // 3. 全ての準備が整ったら、ローディング画面を非表示にする
+        loadingOverlay.style.display = 'none';
+        appContainer.style.opacity = '1';
+    } catch (error) {
+        console.error("FATAL: Application initialization failed.", error);
+        showInitializationError("アプリケーションの初期化に失敗しました。コンソールを確認してください。");
+    }
 }
 
 // --- 初期データ設定 (修正版) ---
@@ -111,14 +118,14 @@ async function ensureDefaultCategories() {
         const batch = writeBatch(db);
         missingCategories.forEach(name => {
             const docRef = doc(categoriesColRef);
-            // serverTimestamp()の代わりにクライアントのDateオブジェクトを使用し、確実性を高める
-            batch.set(docRef, { name: name, createdAt: new Date() });
+            batch.set(docRef, { name: name, createdAt: serverTimestamp() });
         });
         try {
             await batch.commit();
         } catch (e) {
             console.error("FATAL: Failed to add default categories.", e);
-            alert("カテゴリの初期設定に失敗しました。コンソールを確認してください。");
+            // エラーを上に投げて、initializeAppDataのcatchブロックで処理させる
+            throw new Error("Could not create default categories.");
         }
     }
 }
@@ -138,10 +145,12 @@ function setupCategoryListener() {
     const qCategories = query(categoriesColRef);
     categoriesUnsubscribe = onSnapshot(qCategories, (snapshot) => {
         currentCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // FirestoreのTimestampオブジェクトをDateオブジェクトに変換してからソート
         currentCategories.sort((a, b) => (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0));
         renderCategories();
         renderCategoryDropdown();
+    }, (error) => {
+        console.error("Category listener error:", error);
+        showInitializationError("カテゴリの読み込みに失敗しました。");
     });
 }
 
@@ -152,6 +161,9 @@ function setupManualListener() {
     manualsUnsubscribe = onSnapshot(query(manualsColRef), (snapshot) => {
         currentManuals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderManualList();
+    }, (error) => {
+        console.error("Manual listener error:", error);
+        showInitializationError("マニュアルの読み込みに失敗しました。");
     });
 }
 
@@ -254,6 +266,15 @@ function formatDate(date) {
     return `${y}年${m}月${d}日(${day})`;
 }
 
+// エラー表示関数
+function showInitializationError(message) {
+    const loadingText = loadingOverlay.querySelector('p');
+    const spinner = loadingOverlay.querySelector('svg');
+    if (loadingText) loadingText.textContent = message;
+    if (spinner) spinner.style.display = 'none';
+    loadingOverlay.style.display = 'flex'; // エラー表示のため表示を強制
+}
+
 
 // --- モーダル関連 ---
 function openModal(manual = null) {
@@ -293,7 +314,7 @@ async function saveManual() {
         const existingCategory = currentCategories.find(c => c.name === newCategoryName);
         if (!existingCategory) {
             const categoriesColRef = collection(db, `categories/${userId}/items`);
-            await addDoc(categoriesColRef, { name: newCategoryName, createdAt: new Date() });
+            await addDoc(categoriesColRef, { name: newCategoryName, createdAt: serverTimestamp() });
         }
         category = newCategoryName;
     }
