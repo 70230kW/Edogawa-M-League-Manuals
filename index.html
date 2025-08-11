@@ -39,10 +39,18 @@
             </button>
 
             <nav class="mt-10 flex-grow">
-                <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4">Categories</h2>
-                <div id="category-filter-list" class="space-y-2">
-                    <!-- Categories will be dynamically inserted here -->
+                <div class="mb-4">
+                    <label for="category-filter-select" class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2 block">Category Filter</label>
+                    <div class="relative">
+                        <select id="category-filter-select" class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2.5 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none">
+                            <!-- Category options will be dynamically inserted here -->
+                        </select>
+                        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 h-5 w-5 pointer-events-none"></i>
+                    </div>
                 </div>
+                 <button id="manage-categories-btn" class="w-full text-left text-sm py-2 px-3 mt-2 rounded-md text-gray-400 hover:bg-gray-800 hover:text-amber-300 transition-colors flex items-center">
+                    <i data-lucide="settings" class="h-4 w-4 mr-2"></i>カテゴリを管理
+                </button>
             </nav>
 
             <div class="mt-auto">
@@ -99,8 +107,13 @@
                         <input type="text" id="manual-title" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
                     </div>
                     <div class="mb-4">
-                        <label for="manual-category" class="block text-sm font-medium text-gray-400 mb-1">カテゴリ</label>
-                        <input type="text" id="manual-category" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="例: サイト更新, トラブルシューティング">
+                        <label for="manual-category-select" class="block text-sm font-medium text-gray-400 mb-1">カテゴリ</label>
+                        <div class="relative">
+                           <select id="manual-category-select" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 appearance-none">
+                               <!-- Category options will be dynamically inserted here -->
+                           </select>
+                           <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 h-5 w-5 pointer-events-none"></i>
+                        </div>
                     </div>
                     <div class="flex-1 flex flex-col overflow-hidden">
                         <label class="block text-sm font-medium text-gray-400 mb-1">内容</label>
@@ -109,22 +122,19 @@
                 </div>
                 <!-- Side Panel (Attachments & History) -->
                 <div class="w-80 flex-shrink-0 flex flex-col gap-6">
-                    <!-- Attachments -->
-                    <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col h-1/2">
+                    <!-- Attachments & Actions -->
+                    <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col h-full">
+                        <h3 class="font-bold text-white mb-3 flex items-center"><i data-lucide="settings-2" class="h-4 w-4 mr-2"></i>アクション</h3>
+                        <div class="space-y-2 mb-6">
+                           <button id="history-btn" class="w-full text-left text-sm py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 transition-colors flex items-center"><i data-lucide="history" class="h-4 w-4 mr-2"></i>バージョン履歴</button>
+                           <button id="pdf-export-btn" class="w-full text-left text-sm py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 transition-colors flex items-center"><i data-lucide="file-down" class="h-4 w-4 mr-2"></i>PDFにエクスポート</button>
+                        </div>
                         <h3 class="font-bold text-white mb-3 flex items-center"><i data-lucide="paperclip" class="h-4 w-4 mr-2"></i>添付ファイル</h3>
                         <div id="attachments-list" class="flex-grow overflow-y-auto space-y-2 pr-2"></div>
                         <label class="mt-3 cursor-pointer bg-gray-700 hover:bg-gray-600 text-center text-sm py-2 px-3 rounded-md text-gray-300 transition-colors">
                             ファイルを追加
                             <input type="file" id="file-upload-input" class="hidden">
                         </label>
-                    </div>
-                    <!-- Actions -->
-                    <div class="bg-gray-800/50 rounded-lg p-4 flex flex-col">
-                        <h3 class="font-bold text-white mb-3 flex items-center"><i data-lucide="settings-2" class="h-4 w-4 mr-2"></i>アクション</h3>
-                        <div class="space-y-2">
-                           <button id="history-btn" class="w-full text-left text-sm py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 transition-colors flex items-center"><i data-lucide="history" class="h-4 w-4 mr-2"></i>バージョン履歴</button>
-                           <button id="pdf-export-btn" class="w-full text-left text-sm py-2 px-3 rounded-md text-gray-300 hover:bg-gray-700 transition-colors flex items-center"><i data-lucide="file-down" class="h-4 w-4 mr-2"></i>PDFにエクスポート</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -150,8 +160,27 @@
                 <h2 class="text-xl font-bold text-white font-display">バージョン履歴</h2>
                 <button id="close-history-modal-btn" class="text-gray-500 hover:text-white transition-colors"><i data-lucide="x" class="h-7 w-7"></i></button>
             </div>
-            <div id="history-list" class="flex-grow p-6 overflow-y-auto space-y-3">
-                <!-- History items go here -->
+            <div id="history-list" class="flex-grow p-6 overflow-y-auto space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- Category Management Modal -->
+    <div id="category-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] hidden backdrop-blur-md">
+        <div class="bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg flex flex-col">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white font-display">カテゴリ管理</h2>
+                <button id="close-category-modal-btn" class="text-gray-500 hover:text-white transition-colors"><i data-lucide="x" class="h-7 w-7"></i></button>
+            </div>
+            <div class="p-6">
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="new-category-input" placeholder="新しいカテゴリ名" class="flex-grow bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <button id="add-category-btn" class="bg-amber-500 hover:bg-amber-400 text-black font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
+                        <i data-lucide="plus" class="h-5 w-5"></i>
+                    </button>
+                </div>
+                <div id="category-manager-list" class="max-h-80 overflow-y-auto space-y-2 pr-2">
+                    <!-- Category manager items go here -->
+                </div>
             </div>
         </div>
     </div>
