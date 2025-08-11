@@ -94,12 +94,25 @@ body {
 }
 
 /* モーダルの表示アニメーション */
-#editor-modal.visible, #history-modal.visible {
+#editor-modal.visible, #history-modal.visible, #category-modal.visible {
     opacity: 1;
+    visibility: visible;
 }
-#editor-modal.visible > div, #history-modal.visible > div {
+#editor-modal > div, #history-modal > div, #category-modal > div {
     transform: scale(1);
     opacity: 1;
+}
+
+#editor-modal, #history-modal, #category-modal {
+    opacity: 0;
+    visibility: hidden;
+    transition: visibility 0s linear 0.3s, opacity 0.3s ease;
+}
+
+#editor-modal > div, #history-modal > div, #category-modal > div {
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.3s ease;
 }
 
 /* 添付ファイルリストのホバーエフェクト */
